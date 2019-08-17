@@ -9,4 +9,6 @@ import com.googlecode.objectify.ObjectifyFilter;
  * asynchronous operations that remain at the end of a request.
  */
 @WebFilter(urlPatterns = {"/*"})
-public class ObjectifyWebFilter extends ObjectifyFilter {}
+public class ObjectifyWebFilter extends ObjectifyFilter {
+	
+}
