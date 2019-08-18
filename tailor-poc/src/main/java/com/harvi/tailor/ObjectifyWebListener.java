@@ -5,6 +5,7 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 
 import com.googlecode.objectify.ObjectifyService;
+import com.harvi.tailor.entities.Person;
 
 @WebListener
 public class ObjectifyWebListener implements ServletContextListener {
@@ -13,7 +14,7 @@ public class ObjectifyWebListener implements ServletContextListener {
   public void contextInitialized(ServletContextEvent event) {
     ObjectifyService.init();
     // This is a good place to register your POJO entity classes.
-    // ObjectifyService.register(YourEntity.class);
+    ObjectifyService.register(Person.class);
   }
 
   @Override
