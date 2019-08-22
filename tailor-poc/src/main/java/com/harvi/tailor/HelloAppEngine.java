@@ -32,7 +32,7 @@ public class HelloAppEngine extends HttpServlet {
 
     response.getWriter().print("Hello App Engine from Git!\r\n");
 
-    testObjectify(response); 
+//    testObjectify(response); 
   }
   
 	private void testObjectify(HttpServletResponse response) throws IOException {
