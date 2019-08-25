@@ -1,4 +1,4 @@
-package com.harvi.tailor;
+package com.harvi.tailor.dao;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
