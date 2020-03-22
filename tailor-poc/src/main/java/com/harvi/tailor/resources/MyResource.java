@@ -1,4 +1,4 @@
-package com.harvi.tailor.services;
+package com.harvi.tailor.resources;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

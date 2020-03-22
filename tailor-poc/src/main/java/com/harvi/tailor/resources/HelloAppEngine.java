@@ -1,4 +1,4 @@
-package com.harvi.tailor.services;
+package com.harvi.tailor.resources;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -29,12 +29,12 @@ public class HelloAppEngine extends HttpServlet {
 		log.fine("Recieved request#" + counter);
 		response.setContentType("text/html");
 		response.setCharacterEncoding("UTF-8");
-
+		response.getWriter().println("Hello Servlet!");
 		response.getWriter().println("<table>");
 		response.getWriter().println("<tr><td><a href=\"logout\">Logout</a></td></tr>");
 		response.getWriter().println("</table>");
 
-//		testObjectify(response);
+		testObjectify(response);
 	}
 
 	private void testObjectify(HttpServletResponse response) throws IOException {

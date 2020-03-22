@@ -28,6 +28,6 @@ public class Person {
 
 	@Override
 	public String toString() {
-		return "Book [id=" + id + ", name=" + name + ", date=" + date + "]";
+		return "Person [id=" + id + ", name=" + name + ", date=" + date + "]";
 	}
 }
