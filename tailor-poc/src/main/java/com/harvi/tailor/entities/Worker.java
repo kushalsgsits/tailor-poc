@@ -9,7 +9,7 @@ import com.googlecode.objectify.annotation.Id;
 public class Worker {
 	@Id
 	private long mobileNum;
-	private String fullName;
+	private String name;
 	private Map<String, Integer> itemToRateMap;
 	
 }

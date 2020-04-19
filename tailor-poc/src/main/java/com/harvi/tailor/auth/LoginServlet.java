@@ -7,16 +7,14 @@ import java.util.logging.Logger;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 /**
  * Servlet implementation class LoginServlet
  */
-@WebServlet("/login")
+@WebServlet("/loginbackup")
 public class LoginServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final Logger log = Logger.getLogger(LoginServlet.class.getName());
@@ -26,19 +24,15 @@ public class LoginServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		// get request parameters for user and password
-		String user = request.getParameter("user");
+		// Get request parameters for user and password
+		String user = request.getParameter("uname");
 		String pwd = request.getParameter("pwd");
 
 		if (userID.equals(user) && password.equals(pwd)) {
-			HttpSession session = request.getSession();
-			session.setAttribute("user", user);
-			// setting session to expiry in 30 mins
-			session.setMaxInactiveInterval(30 * 60);
-			Cookie userNameCookie = new Cookie("user", user);
-			userNameCookie.setMaxAge(30 * 60);
-			response.addCookie(userNameCookie);
-			response.sendRedirect(request.getContextPath() + "/");
+//			String jws = AuthUtil.createJWT("ID", "Gujrati Tailors", user, 1 * 60 * 60 * 1000);
+//			response.addHeader(AuthUtil.AUTH_HEADER_STRING, AuthUtil.TOKEN_PREFIX + jws);
+			// TODO redirect to requested page
+//			response.sendRedirect(request.getContextPath() + "/hello");
 		} else {
 			RequestDispatcher rd = getServletContext().getRequestDispatcher("/login.html");
 			PrintWriter out = response.getWriter();

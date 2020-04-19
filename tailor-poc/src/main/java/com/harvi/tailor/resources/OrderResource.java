@@ -25,36 +25,36 @@ public class OrderResource implements RestMethods<Order> {
 	private OrderDao dao = OrderDao.getInstance();
 
 	@GET
-	public List<Order> getAll(@BeanParam OrderFilterBean bean) {
-		if (bean.getMobileNum() > 0) {
+	public List<Order> getAll(/* @BeanParam OrderFilterBean bean */) {
+//		if (bean.getMobileNum() > 0) {
 //			return dao.getAllByMobileNum();
-		}
-		return dao.getAll();
+//		}
+		return dao.getRecentOrders();
 	}
 
 	@GET
-	@Path("/{orderID}")
-	public Order get(@PathParam("orderID") String orderID) {
-		return dao.get(orderID);
+	@Path("/{id}")
+	public Order get(@PathParam("id") String id) {
+		return dao.get(id);
 	}
-	
-	/*@POST
+
+	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Order create(Order order) {
-		return dao.create(order);
+	public Order save(Order order) {
+		return dao.save(order);
 	}
-	
+
 	@PUT
-	@Path("/{orderID}")
+	@Path("/{id}")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Item update(@PathParam("orderID") String orderID, Order order) {
-		orderID.setOrderID(orderID);
+	public Order update(@PathParam("id") String id, Order order) {
+		order.setId(id);
 		return dao.update(order);
 	}
-	
+
 	@DELETE
-	@Path("/{orderID}")
-	public void delete(@PathParam("orderID") String orderID) {
-		return dao.delete(orderID);
-	}*/
+	@Path("/{id}")
+	public void delete(@PathParam("id") String id) {
+		dao.delete(id);
+	}
 }

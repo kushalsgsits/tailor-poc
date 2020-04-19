@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
 
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -21,6 +22,11 @@ public class HelloAppEngine extends HttpServlet {
 
 	private static final Logger log = Logger.getLogger(HelloAppEngine.class.getName());
 	private static int counter = 0;
+	
+	@Override
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		doGet(req, resp);
+	}
 
 	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -34,7 +40,7 @@ public class HelloAppEngine extends HttpServlet {
 		response.getWriter().println("<tr><td><a href=\"logout\">Logout</a></td></tr>");
 		response.getWriter().println("</table>");
 
-		testObjectify(response);
+//		testObjectify(response);
 	}
 
 	private void testObjectify(HttpServletResponse response) throws IOException {
