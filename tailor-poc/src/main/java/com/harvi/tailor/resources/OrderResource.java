@@ -11,25 +11,23 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.UriInfo;
 
-import com.harvi.tailor.dao.ItemDao;
 import com.harvi.tailor.dao.OrderDao;
-import com.harvi.tailor.entities.Item;
 import com.harvi.tailor.entities.Order;
+import com.harvi.tailor.entities.filterbeans.OrderFilterBean;
 
 @Path("/orders")
 @Produces(MediaType.APPLICATION_JSON)
-public class OrderResource implements RestMethods<Order> {
+public class OrderResource {
 
 	private OrderDao dao = OrderDao.getInstance();
 
 	@GET
-	public List<Order> getAll(/* @BeanParam OrderFilterBean bean */) {
-//		if (bean.getMobileNum() > 0) {
-//			return dao.getAllByMobileNum();
-//		}
-		return dao.getRecentOrders();
+	public List<Order> getAll(@BeanParam OrderFilterBean orderFilterBean) {
+		return dao.getRecentOrders(orderFilterBean);
 	}
 
 	@GET
@@ -40,8 +38,8 @@ public class OrderResource implements RestMethods<Order> {
 
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Order save(Order order) {
-		return dao.save(order);
+	public Order save(Order order, @Context UriInfo uriInfo) {
+		return dao.save(order, uriInfo);
 	}
 
 	@PUT

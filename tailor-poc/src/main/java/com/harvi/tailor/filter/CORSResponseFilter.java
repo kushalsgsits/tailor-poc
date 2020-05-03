@@ -1,4 +1,4 @@
-package com.harvi.tailor.auth;
+package com.harvi.tailor.filter;
 
 import java.io.IOException;
 
@@ -20,7 +20,7 @@ public class CORSResponseFilter implements ContainerResponseFilter {
 		// Allows CORS requests only coming from podcastpedia.org
 		// headers.add("Access-Control-Allow-Origin", "http://podcastpedia.org");
 		headers.add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, OPTIONS");
-		headers.add("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Authorization");
+		headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
 	}
 
 }

@@ -16,6 +16,7 @@ public class ObjectifyWebListener implements ServletContextListener {
 	public void contextInitialized(ServletContextEvent event) {
 		ObjectifyService.init(new ObjectifyFactory(DatastoreOptions.newBuilder().setHost("http://localhost:8081")
 				.setProjectId("tailor-poc").build().getService()));
+//		ObjectifyService.init();
 		// This is a good place to register your POJO entity classes.
 		ObjectifyService.register(Order.class);
 	}

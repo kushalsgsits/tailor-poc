@@ -6,9 +6,9 @@ import com.googlecode.objectify.annotation.Entity;
 import com.googlecode.objectify.annotation.Id;
 
 @Entity
-public class Worker {
+public class Karigar {
 	@Id
-	private long mobileNum;
+	private long mobile;
 	private String name;
 	private Map<String, Integer> itemToRateMap;
 	

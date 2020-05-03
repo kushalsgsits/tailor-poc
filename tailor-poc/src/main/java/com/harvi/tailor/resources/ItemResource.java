@@ -17,7 +17,7 @@ import com.harvi.tailor.entities.Item;
 
 @Path("/items")
 @Produces(MediaType.APPLICATION_JSON)
-public class ItemResource implements RestMethods<Item> {
+public class ItemResource {
 
 	private ItemDao dao = ItemDao.getInstance();
 
