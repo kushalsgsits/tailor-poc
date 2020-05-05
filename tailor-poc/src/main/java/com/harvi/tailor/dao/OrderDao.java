@@ -40,12 +40,22 @@ public class OrderDao {
 	}
 
 	public List<Order> getRecentOrders(OrderFilterBean orderFilterBean) {
-		Query<Order> baseLoadQuery = ObjectifyService.ofy().load().type(Order.class).order("-deliveryDate").limit(30);
-		Filter filter = createFilterFromOrderFilterBean(orderFilterBean);
-		if (filter != null) {
-			return baseLoadQuery.filter(filter).list();
+		try {
+			Query<Order> baseLoadQuery = ObjectifyService.ofy().load().type(Order.class).order("-deliveryDate")
+					.limit(30);
+			Filter filter = createFilterFromOrderFilterBean(orderFilterBean);
+			if (filter != null) {
+				return baseLoadQuery.filter(filter).list();
+			}
+			return baseLoadQuery.list();
+		} catch (Exception e) {
+			String shortErrorMsg = "Could not fetch orders";
+			String longErrorMsg = Arrays.toString(e.getStackTrace());
+			LOG.severe(shortErrorMsg + ": " + longErrorMsg);
+			ApiError apiError = new ApiError(shortErrorMsg, longErrorMsg);
+			Response response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(apiError).build();
+			throw new WebApplicationException(response);
 		}
-		return baseLoadQuery.list();
 	}
 
 	public Order get(String id) {
