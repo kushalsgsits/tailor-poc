@@ -27,7 +27,7 @@ public class OrderResource {
 
 	@GET
 	public List<Order> getAll(@BeanParam OrderFilterBean orderFilterBean) {
-		return dao.getRecentOrders(orderFilterBean);
+		return dao.getFilteredOrders(orderFilterBean);
 	}
 
 	@GET

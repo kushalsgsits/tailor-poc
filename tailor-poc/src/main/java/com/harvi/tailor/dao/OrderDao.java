@@ -1,10 +1,13 @@
 package com.harvi.tailor.dao;
 
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.logging.Logger;
 
 import javax.ws.rs.WebApplicationException;
@@ -13,9 +16,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import com.google.appengine.repackaged.org.joda.time.format.DateTimeFormatter;
-import com.google.appengine.repackaged.org.joda.time.format.ISODateTimeFormat;
-import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.StructuredQuery.CompositeFilter;
 import com.google.cloud.datastore.StructuredQuery.Filter;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
@@ -31,6 +31,8 @@ public class OrderDao {
 
 	private static final OrderDao INSTANCE = new OrderDao();
 
+	private static final String ISO_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+
 	private OrderDao() {
 
 	}
@@ -39,9 +41,9 @@ public class OrderDao {
 		return INSTANCE;
 	}
 
-	public List<Order> getRecentOrders(OrderFilterBean orderFilterBean) {
+	public List<Order> getFilteredOrders(OrderFilterBean orderFilterBean) {
 		try {
-			Query<Order> baseLoadQuery = ObjectifyService.ofy().load().type(Order.class).order("-deliveryDate")
+			Query<Order> baseLoadQuery = ObjectifyService.ofy().load().type(Order.class).order("deliveryDate")
 					.limit(30);
 			Filter filter = createFilterFromOrderFilterBean(orderFilterBean);
 			if (filter != null) {
@@ -50,73 +52,74 @@ public class OrderDao {
 			return baseLoadQuery.list();
 		} catch (Exception e) {
 			String shortErrorMsg = "Could not fetch orders";
-			String longErrorMsg = Arrays.toString(e.getStackTrace());
-			LOG.severe(shortErrorMsg + ": " + longErrorMsg);
-			ApiError apiError = new ApiError(shortErrorMsg, longErrorMsg);
+			ApiError apiError = createApiError(e, shortErrorMsg);
 			Response response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(apiError).build();
 			throw new WebApplicationException(response);
 		}
 	}
 
 	public Order get(String id) {
-		Order order = null;
-		String shortErrorMsg = null;
-		String longErrorMsg = null;
+		Exception exp = null;
 		try {
-			order = loadOrderById(id);
+			Order order = loadOrderById(id);
+			if (null != order) {
+				return order;
+			}
 		} catch (Exception e) {
-			shortErrorMsg = "Order with id=" + id + " not found";
-			longErrorMsg = Arrays.toString(e.getStackTrace());
-			LOG.severe(shortErrorMsg + ": " + longErrorMsg);
+			exp = e;
 		}
-		if (order == null) {
-			ApiError apiError = new ApiError(shortErrorMsg, longErrorMsg);
-			Response response = Response.status(Status.NOT_FOUND).entity(apiError).build();
-			throw new WebApplicationException(response);
-		}
-		return order;
+
+		String shortErrorMsg = "Could not find orders";
+		ApiError apiError = createApiError(exp, shortErrorMsg);
+		Response response = Response.status(Status.NOT_FOUND).entity(apiError).build();
+		throw new WebApplicationException(response);
 	}
 
 	public Order save(Order order, UriInfo uriInfo) {
-		order.setId(createId(order));
-		LOG.fine("Saving Order: " + order);
-		String id = order.getId();
-		Order duplicateOrder = loadOrderById(id);
-		if (null != duplicateOrder) {
-			String shortErrorMsg = "Order with id=" + id + " already exists";
-			String longErrorMsg = "Duplicate " + duplicateOrder.toString();
-			LOG.severe(shortErrorMsg + ": " + longErrorMsg);
-			ApiError apiError = new ApiError(shortErrorMsg, longErrorMsg);
-			String duplicateOrderURIString = uriInfo.getAbsolutePathBuilder().build(id).toString();
-			Response response = Response.status(Status.CONFLICT).entity(apiError)
-					.header(HttpHeaders.LOCATION, duplicateOrderURIString).build();
+		try {
+			order.setId(createId(order));
+			LOG.fine("Saving Order: " + order);
+			String id = order.getId();
+			Order duplicateOrder = loadOrderById(id);
+			if (null != duplicateOrder) {
+				throwExceptionForDuplicateOrder(uriInfo, id, duplicateOrder);
+			}
+			saveOrder(order);
+			return order;
+		} catch (WebApplicationException wae) {
+			throw wae;
+		} catch (Exception e) {
+			String shortErrorMsg = "Could not save order";
+			ApiError apiError = createApiError(e, shortErrorMsg);
+			Response response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(apiError).build();
 			throw new WebApplicationException(response);
 		}
-		saveOrder(order);
-		return order;
 	}
 
 	public void delete(String id) {
-		deletedOrder(id);
-	}
-
-	private static String createId(Order order) {
-		SimpleDateFormat sdf = new SimpleDateFormat("MM-yyyy");
-		String orderDate = sdf.format(order.getOrderDate());
-
-		StringBuilder idBuilder = new StringBuilder();
-		idBuilder.append(order.getOrderType().charAt(0)).append("-").append(order.getOrderNumber()).append("-")
-				.append(orderDate);
-		String id = idBuilder.toString();
-		return id;
+		try {
+			deletedOrder(id);
+		} catch (Exception e) {
+			String shortErrorMsg = "Could not delete order";
+			ApiError apiError = createApiError(e, shortErrorMsg);
+			Response response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(apiError).build();
+			throw new WebApplicationException(response);
+		}
 	}
 
 	public Order update(Order order) {
-		LOG.fine("Updating Order: " + order);
-		deletedOrder(order.getId());
-		order.setId(createId(order));
-		saveOrder(order);
-		return order;
+		try {
+			LOG.fine("Updating Order: " + order);
+			deletedOrder(order.getId());
+			order.setId(createId(order));
+			saveOrder(order);
+			return order;
+		} catch (Exception e) {
+			String shortErrorMsg = "Could not update order";
+			ApiError apiError = createApiError(e, shortErrorMsg);
+			Response response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(apiError).build();
+			throw new WebApplicationException(response);
+		}
 	}
 
 	private static void saveOrder(Order order) {
@@ -131,28 +134,42 @@ public class OrderDao {
 		ObjectifyService.ofy().delete().type(Order.class).id(id).now();
 	}
 
-	private static Filter createFilterFromOrderFilterBean(OrderFilterBean orderFilterBean) {
+	private static String createId(Order order) throws ParseException {
+		SimpleDateFormat sdf = new SimpleDateFormat("MM-yyyy");
+		String orderDate = sdf.format(toDateFromISO8601UTC(order.getOrderDate()));
+
+		StringBuilder idBuilder = new StringBuilder();
+		idBuilder.append(order.getOrderType().charAt(0)).append("-").append(order.getOrderNumber()).append("-")
+				.append(orderDate);
+		String id = idBuilder.toString();
+		return id;
+	}
+
+	private static Filter createFilterFromOrderFilterBean(OrderFilterBean orderFilterBean) throws ParseException {
 		Filter compositeFilter = null;
 
-		if (orderFilterBean.getDeliveryStartDate() != null && orderFilterBean.getDeliveryStartDate().length() > 0) {
-			Date deliveryStartDate = getDateFromIsoStr(orderFilterBean.getDeliveryStartDate());
-			compositeFilter = PropertyFilter.ge("deliveryDate", getDeliveryStartTimestamp(deliveryStartDate));
-		}
+		boolean hasDeliveryStartDate = orderFilterBean.getDeliveryStartDate() != null
+				&& orderFilterBean.getDeliveryStartDate().length() > 0;
+		boolean hasDeliveryEndDate = orderFilterBean.getDeliveryEndDate() != null
+				&& orderFilterBean.getDeliveryEndDate().length() > 0;
 
-		if (orderFilterBean.getDeliveryEndDate() != null && orderFilterBean.getDeliveryEndDate().length() > 0) {
-			Date deliveryEndDate = getDateFromIsoStr(orderFilterBean.getDeliveryEndDate());
+		Date deliveryStartDate = null;
+		if (hasDeliveryStartDate) {
+			deliveryStartDate = toDateFromISO8601UTC(orderFilterBean.getDeliveryStartDate());
+		} else if (!hasDeliveryEndDate) {
+			deliveryStartDate = new Date();
+		}
+		deliveryStartDate = getUpdatedDeliveryStartDate(deliveryStartDate);
+		compositeFilter = PropertyFilter.ge("deliveryDate", toISO8601UTCFromDate(deliveryStartDate));
+
+		if (hasDeliveryEndDate) {
+			Date deliveryEndDate = toDateFromISO8601UTC(orderFilterBean.getDeliveryEndDate());
+			deliveryEndDate = getUpdatedDeliveryEndTimestamp(deliveryEndDate);
 			PropertyFilter deliveryEndDateFilter = PropertyFilter.le("deliveryDate",
-					getDeliveryEndTimestamp(deliveryEndDate));
+					toISO8601UTCFromDate(deliveryEndDate));
 			compositeFilter = null == compositeFilter ? deliveryEndDateFilter
 					: CompositeFilter.and(compositeFilter, deliveryEndDateFilter);
 		}
-
-//		if (orderFilterBean.getItemCategory() != null && orderFilterBean.getItemCategory().trim().length() > 0
-//				&& !orderFilterBean.getItemCategory().contains("Coat")) {
-//			PropertyFilter orderTypeFilter = PropertyFilter.eq("orderType", "Regular");
-//			compositeFilter = null == compositeFilter ? orderTypeFilter
-//					: CompositeFilter.and(compositeFilter, orderTypeFilter);
-//		}
 
 		if (orderFilterBean.getOrderNumber() > 0) {
 			PropertyFilter orderNumberFilter = PropertyFilter.eq("orderNumber", orderFilterBean.getOrderNumber());
@@ -176,47 +193,64 @@ public class OrderDao {
 		return compositeFilter;
 	}
 
-	private static Timestamp getDeliveryStartTimestamp(Date deliveryStartDate) {
+	private static Date getUpdatedDeliveryStartDate(Date deliveryStartDate) {
 		Calendar c = Calendar.getInstance();
 		c.setTime(deliveryStartDate);
 		c.set(Calendar.HOUR_OF_DAY, 0);
 		c.set(Calendar.MINUTE, 0);
 		c.set(Calendar.SECOND, 0);
 		c.set(Calendar.MILLISECOND, 0);
-		return Timestamp.of(c.getTime());
+		return c.getTime();
 	}
 
-	private static Timestamp getDeliveryEndTimestamp(Date deliveryEndDate) {
+	private static Date getUpdatedDeliveryEndTimestamp(Date deliveryEndDate) {
 		Calendar c = Calendar.getInstance();
 		c.setTime(deliveryEndDate);
 		c.set(Calendar.HOUR_OF_DAY, 23);
 		c.set(Calendar.MINUTE, 59);
 		c.set(Calendar.SECOND, 59);
 		c.set(Calendar.MILLISECOND, 999);
-		return Timestamp.of(c.getTime());
+		return c.getTime();
 	}
 
-	public static void main(String[] args) {
-		Date d = getDateFromIsoStr("2020-04-06T18:30:00.000Z");
-		System.out.println("d=" + d);
-		SimpleDateFormat sdf = new SimpleDateFormat("MM-yyyy");
-		System.out.println(sdf.format(d));
+//	private static Date toDateFromISO8601UTC(String iso8601date) {
+//		DateTimeFormatter jodaParser = ISODateTimeFormat.dateTime();
+//		return jodaParser.parseDateTime(iso8601date).toDate();
+//	}
 
-//		Timestamp st = getDeliveryStartTimestamp(deliveryStartDate);
-//		System.out.println("t=" + st);
-//
-//		Timestamp et = getDeliveryEndTimestamp(deliveryStartDate);
-//		System.out.println("t=" + et);
-//
-//		PropertyFilter deliveryStartDateFilter = PropertyFilter.ge("deliveryDate", st);
-//		PropertyFilter deliveryEndDateFilter = PropertyFilter.le("deliveryDate", et);
-//
-//		CompositeFilter compositeFilter = CompositeFilter.and(deliveryStartDateFilter, deliveryEndDateFilter);
-//		System.out.println(compositeFilter);
+	private static DateFormat getISO8601UTCDateFormat() {
+		TimeZone tz = TimeZone.getTimeZone("UTC");
+		DateFormat df = new SimpleDateFormat(ISO_DATE_FORMAT);
+		df.setTimeZone(tz);
+		return df;
 	}
 
-	private static Date getDateFromIsoStr(String iso8601date) {
-		DateTimeFormatter jodaParser = ISODateTimeFormat.dateTime();
-		return jodaParser.parseDateTime(iso8601date).toDate();
+	private static String toISO8601UTCFromDate(Date date) {
+		DateFormat df = getISO8601UTCDateFormat();
+		return df.format(date);
+	}
+
+	private static Date toDateFromISO8601UTC(String dateStr) throws ParseException {
+		DateFormat df = getISO8601UTCDateFormat();
+		return df.parse(dateStr);
+	}
+
+	private ApiError createApiError(Exception e, String shortErrorMsg) {
+		String longErrorMsg = e == null ? ""
+				: "ExceptionMsg: " + e.getMessage() + "\nStackTrace: " + Arrays.toString(e.getStackTrace());
+		LOG.severe(shortErrorMsg + (e == null ? "" : (": " + longErrorMsg)));
+		ApiError apiError = new ApiError(shortErrorMsg, longErrorMsg);
+		return apiError;
+	}
+
+	private void throwExceptionForDuplicateOrder(UriInfo uriInfo, String id, Order duplicateOrder) {
+		String shortErrorMsg = "Could not save order as order placed is duplicate";
+		String longErrorMsg = "Duplicate " + duplicateOrder.toString();
+		LOG.severe(shortErrorMsg + ": " + longErrorMsg);
+		ApiError apiError = new ApiError(shortErrorMsg, longErrorMsg);
+		String duplicateOrderURIString = uriInfo.getAbsolutePathBuilder().build(id).toString();
+		Response response = Response.status(Status.CONFLICT).entity(apiError)
+				.header(HttpHeaders.LOCATION, duplicateOrderURIString).build();
+		throw new WebApplicationException(response);
 	}
 }

@@ -15,10 +15,9 @@ public class Order {
 	@Id
 	private String id;
 
-	@Index
 	private String orderType;
 
-	private Date orderDate;
+	private String orderDate;
 
 	@Index
 	private Date deliveryDate;
@@ -57,11 +56,11 @@ public class Order {
 		this.orderType = orderType;
 	}
 
-	public Date getOrderDate() {
+	public String getOrderDate() {
 		return orderDate;
 	}
 
-	public void setOrderDate(Date orderDate) {
+	public void setOrderDate(String orderDate) {
 		this.orderDate = orderDate;
 	}
 

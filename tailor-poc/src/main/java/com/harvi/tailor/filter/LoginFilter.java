@@ -31,6 +31,11 @@ public class LoginFilter implements Filter {
 
 		String uri = req.getRequestURI();
 		LOG.info("Requested Resource: " + uri);
+		if ("OPTIONS".equalsIgnoreCase(req.getMethod())) {
+			addCORSHeaders(res);
+			res.setStatus(HttpServletResponse.SC_OK);
+			return;
+		}
 		if (uri.equals("/webapi/login")) {
 			chain.doFilter(request, response);
 			return;
@@ -43,9 +48,19 @@ public class LoginFilter implements Filter {
 		} else {
 			String errMsg = "Auth token is either missing or invalid";
 			LOG.severe(errMsg);
-			// TODO res.sendError(HttpServletResponse.SC_UNAUTHORIZED, errMsg);
-			chain.doFilter(request, response);
+			addCORSHeaders(res);
+			res.setStatus(HttpServletResponse.SC_UNAUTHORIZED, errMsg);
+			return;
 		}
+	}
+
+	private void addCORSHeaders(HttpServletResponse res) {
+		// TODO kc replace "*" with specific domain
+		res.addHeader("Access-Control-Allow-Origin", "*");
+		// Allows CORS requests only coming from podcastpedia.org
+		// headers.add("Access-Control-Allow-Origin", "http://podcastpedia.org");
+		res.addHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, OPTIONS");
+		res.addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
 	}
 
 	public void destroy() {
