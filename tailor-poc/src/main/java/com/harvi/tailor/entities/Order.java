@@ -1,7 +1,6 @@
 package com.harvi.tailor.entities;
 
 import java.util.Arrays;
-import java.util.Date;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -17,10 +16,10 @@ public class Order {
 
 	private String orderType;
 
-	private String orderDate;
+	private long orderDateMillis;
 
 	@Index
-	private Date deliveryDate;
+	private long deliveryDateMillis;
 
 	@Index
 	private int orderNumber;
@@ -56,20 +55,20 @@ public class Order {
 		this.orderType = orderType;
 	}
 
-	public String getOrderDate() {
-		return orderDate;
+	public long getOrderDateMillis() {
+		return orderDateMillis;
 	}
 
-	public void setOrderDate(String orderDate) {
-		this.orderDate = orderDate;
+	public void setOrderDateMillis(long orderDateMillis) {
+		this.orderDateMillis = orderDateMillis;
 	}
 
-	public Date getDeliveryDate() {
-		return deliveryDate;
+	public long getDeliveryDateMillis() {
+		return deliveryDateMillis;
 	}
 
-	public void setDeliveryDate(Date deliveryDate) {
-		this.deliveryDate = deliveryDate;
+	public void setDeliveryDateMillis(long deliveryDateMillis) {
+		this.deliveryDateMillis = deliveryDateMillis;
 	}
 
 	public int getOrderNumber() {
@@ -122,10 +121,10 @@ public class Order {
 
 	@Override
 	public String toString() {
-		return "Order [id=" + id + ", orderType=" + orderType + ", orderDate=" + orderDate + ", deliveryDate="
-				+ deliveryDate + ", orderNumber=" + orderNumber + ", name=" + name + ", mobile=" + mobile
-				+ ", itemNames=" + Arrays.toString(itemNames) + ", itemCounts=" + Arrays.toString(itemCounts)
-				+ ", notes=" + notes + "]";
+		return "Order [id=" + id + ", orderType=" + orderType + ", orderDateMillis=" + orderDateMillis
+				+ ", deliveryDateMillis=" + deliveryDateMillis + ", orderNumber=" + orderNumber + ", name=" + name
+				+ ", mobile=" + mobile + ", itemNames=" + Arrays.toString(itemNames) + ", itemCounts="
+				+ Arrays.toString(itemCounts) + ", notes=" + notes + "]";
 	}
 
 }

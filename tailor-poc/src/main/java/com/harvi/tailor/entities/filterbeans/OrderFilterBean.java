@@ -4,26 +4,26 @@ import javax.ws.rs.QueryParam;
 
 public class OrderFilterBean {
 
-	private @QueryParam("deliveryStartDate") String deliveryStartDate;
-	private @QueryParam("deliveryEndDate") String deliveryEndDate;
+	private @QueryParam("deliveryStartDateMillis") long deliveryStartDate;
+	private @QueryParam("deliveryEndDateMillis") long deliveryEndDate;
 	private @QueryParam("itemCategory") String itemCategory;
 	private @QueryParam("orderNumber") long orderNumber;
 	private @QueryParam("name") String name;
 	private @QueryParam("mobile") long mobile;
 
-	public String getDeliveryStartDate() {
+	public long getDeliveryStartDate() {
 		return deliveryStartDate;
 	}
 
-	public void setDeliveryStartDate(String deliveryStartDate) {
+	public void setDeliveryStartDate(long deliveryStartDate) {
 		this.deliveryStartDate = deliveryStartDate;
 	}
 
-	public String getDeliveryEndDate() {
+	public long getDeliveryEndDate() {
 		return deliveryEndDate;
 	}
 
-	public void setDeliveryEndDate(String deliveryEndDate) {
+	public void setDeliveryEndDate(long deliveryEndDate) {
 		this.deliveryEndDate = deliveryEndDate;
 	}
 

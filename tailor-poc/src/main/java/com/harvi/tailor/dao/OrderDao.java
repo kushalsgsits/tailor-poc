@@ -1,13 +1,11 @@
 package com.harvi.tailor.dao;
 
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.logging.Logger;
 
 import javax.ws.rs.WebApplicationException;
@@ -31,8 +29,6 @@ public class OrderDao {
 
 	private static final OrderDao INSTANCE = new OrderDao();
 
-	private static final String ISO_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-
 	private OrderDao() {
 
 	}
@@ -43,7 +39,7 @@ public class OrderDao {
 
 	public List<Order> getFilteredOrders(OrderFilterBean orderFilterBean) {
 		try {
-			Query<Order> baseLoadQuery = ObjectifyService.ofy().load().type(Order.class).order("deliveryDate")
+			Query<Order> baseLoadQuery = ObjectifyService.ofy().load().type(Order.class).order("deliveryDateMillis")
 					.limit(30);
 			Filter filter = createFilterFromOrderFilterBean(orderFilterBean);
 			if (filter != null) {
@@ -69,7 +65,7 @@ public class OrderDao {
 			exp = e;
 		}
 
-		String shortErrorMsg = "Could not find orders";
+		String shortErrorMsg = "Could not find order";
 		ApiError apiError = createApiError(exp, shortErrorMsg);
 		Response response = Response.status(Status.NOT_FOUND).entity(apiError).build();
 		throw new WebApplicationException(response);
@@ -136,7 +132,7 @@ public class OrderDao {
 
 	private static String createId(Order order) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("MM-yyyy");
-		String orderDate = sdf.format(toDateFromISO8601UTC(order.getOrderDate()));
+		String orderDate = sdf.format(new Date(order.getOrderDateMillis()));
 
 		StringBuilder idBuilder = new StringBuilder();
 		idBuilder.append(order.getOrderType().charAt(0)).append("-").append(order.getOrderNumber()).append("-")
@@ -148,25 +144,22 @@ public class OrderDao {
 	private static Filter createFilterFromOrderFilterBean(OrderFilterBean orderFilterBean) throws ParseException {
 		Filter compositeFilter = null;
 
-		boolean hasDeliveryStartDate = orderFilterBean.getDeliveryStartDate() != null
-				&& orderFilterBean.getDeliveryStartDate().length() > 0;
-		boolean hasDeliveryEndDate = orderFilterBean.getDeliveryEndDate() != null
-				&& orderFilterBean.getDeliveryEndDate().length() > 0;
+		boolean hasDeliveryStartDate = orderFilterBean.getDeliveryStartDate() > 0;
+		boolean hasDeliveryEndDate = orderFilterBean.getDeliveryEndDate() > 0;
 
-		Date deliveryStartDate = null;
+		long deliveryStartDate = 0;
 		if (hasDeliveryStartDate) {
-			deliveryStartDate = toDateFromISO8601UTC(orderFilterBean.getDeliveryStartDate());
+			deliveryStartDate = orderFilterBean.getDeliveryStartDate();
 		} else if (!hasDeliveryEndDate) {
-			deliveryStartDate = new Date();
+			deliveryStartDate = System.currentTimeMillis();
 		}
 		deliveryStartDate = getUpdatedDeliveryStartDate(deliveryStartDate);
-		compositeFilter = PropertyFilter.ge("deliveryDate", toISO8601UTCFromDate(deliveryStartDate));
+		compositeFilter = PropertyFilter.ge("deliveryDateMillis", deliveryStartDate);
 
 		if (hasDeliveryEndDate) {
-			Date deliveryEndDate = toDateFromISO8601UTC(orderFilterBean.getDeliveryEndDate());
+			long deliveryEndDate = orderFilterBean.getDeliveryEndDate();
 			deliveryEndDate = getUpdatedDeliveryEndTimestamp(deliveryEndDate);
-			PropertyFilter deliveryEndDateFilter = PropertyFilter.le("deliveryDate",
-					toISO8601UTCFromDate(deliveryEndDate));
+			PropertyFilter deliveryEndDateFilter = PropertyFilter.le("deliveryDateMillis", deliveryEndDate);
 			compositeFilter = null == compositeFilter ? deliveryEndDateFilter
 					: CompositeFilter.and(compositeFilter, deliveryEndDateFilter);
 		}
@@ -193,46 +186,24 @@ public class OrderDao {
 		return compositeFilter;
 	}
 
-	private static Date getUpdatedDeliveryStartDate(Date deliveryStartDate) {
+	private static long getUpdatedDeliveryStartDate(long deliveryStartDateMillis) {
 		Calendar c = Calendar.getInstance();
-		c.setTime(deliveryStartDate);
+		c.setTime(new Date(deliveryStartDateMillis));
 		c.set(Calendar.HOUR_OF_DAY, 0);
 		c.set(Calendar.MINUTE, 0);
 		c.set(Calendar.SECOND, 0);
 		c.set(Calendar.MILLISECOND, 0);
-		return c.getTime();
+		return c.getTime().getTime();
 	}
 
-	private static Date getUpdatedDeliveryEndTimestamp(Date deliveryEndDate) {
+	private static long getUpdatedDeliveryEndTimestamp(long deliveryEndDateMillis) {
 		Calendar c = Calendar.getInstance();
-		c.setTime(deliveryEndDate);
+		c.setTime(new Date(deliveryEndDateMillis));
 		c.set(Calendar.HOUR_OF_DAY, 23);
 		c.set(Calendar.MINUTE, 59);
 		c.set(Calendar.SECOND, 59);
 		c.set(Calendar.MILLISECOND, 999);
-		return c.getTime();
-	}
-
-//	private static Date toDateFromISO8601UTC(String iso8601date) {
-//		DateTimeFormatter jodaParser = ISODateTimeFormat.dateTime();
-//		return jodaParser.parseDateTime(iso8601date).toDate();
-//	}
-
-	private static DateFormat getISO8601UTCDateFormat() {
-		TimeZone tz = TimeZone.getTimeZone("UTC");
-		DateFormat df = new SimpleDateFormat(ISO_DATE_FORMAT);
-		df.setTimeZone(tz);
-		return df;
-	}
-
-	private static String toISO8601UTCFromDate(Date date) {
-		DateFormat df = getISO8601UTCDateFormat();
-		return df.format(date);
-	}
-
-	private static Date toDateFromISO8601UTC(String dateStr) throws ParseException {
-		DateFormat df = getISO8601UTCDateFormat();
-		return df.parse(dateStr);
+		return c.getTime().getTime();
 	}
 
 	private ApiError createApiError(Exception e, String shortErrorMsg) {
