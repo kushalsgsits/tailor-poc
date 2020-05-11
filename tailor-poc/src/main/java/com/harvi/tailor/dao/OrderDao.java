@@ -5,8 +5,11 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -29,6 +32,34 @@ public class OrderDao {
 
 	private static final OrderDao INSTANCE = new OrderDao();
 
+	private static Map<String, List<String>> ITEM_NAME_TO_ITEM_CATEGORIES_MAP = new HashMap<>();
+
+	static {
+		// All item categories:
+		// 'Coat', 'Shirt', 'Pant', 'Kurta', 'Payjama', 'Jacket', 'Safari Shirt',
+		// 'Others'
+		// All item names:
+		// '2 Piece Suit', '3 Piece Suit', 'Blazer', 'Achkan', 'Shirt', 'Pant', 'Jeans',
+		// 'Kurta', 'Payjama', 'Pant Payjama', 'Pathani', 'Kurti', 'Jacket', 'Safari',
+		// 'Waist Coat', 'Others'
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("2 Piece Suit", Arrays.asList("Coat", "Pant"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("3 Piece Suit", Arrays.asList("Coat", "Pant", "Jacket"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Blazer", Arrays.asList("Coat"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Achkan", Arrays.asList("Coat"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Shirt", Arrays.asList("Shirt"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Pant", Arrays.asList("Pant"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Jeans", Arrays.asList("Pant"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Kurti", Arrays.asList("Shirt"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Kurta", Arrays.asList("Kurta"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Payjama", Arrays.asList("Payjama"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Pant Payjama", Arrays.asList("Pant"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Pathani", Arrays.asList("Kurta"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Jacket", Arrays.asList("Jacket"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Waist Coat", Arrays.asList("Jacket"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Safari", Arrays.asList("Safari Shirt", "Pant"));
+		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Others", Arrays.asList("Others"));
+	}
+
 	private OrderDao() {
 
 	}
@@ -39,13 +70,7 @@ public class OrderDao {
 
 	public List<Order> getFilteredOrders(OrderFilterBean orderFilterBean) {
 		try {
-			Query<Order> baseLoadQuery = ObjectifyService.ofy().load().type(Order.class).order("deliveryDateMillis")
-					.limit(30);
-			Filter filter = createFilterFromOrderFilterBean(orderFilterBean);
-			if (filter != null) {
-				return baseLoadQuery.filter(filter).list();
-			}
-			return baseLoadQuery.list();
+			return getOrdersForFilterBean(orderFilterBean);
 		} catch (Exception e) {
 			String shortErrorMsg = "Could not fetch orders";
 			ApiError apiError = createApiError(e, shortErrorMsg);
@@ -141,49 +166,84 @@ public class OrderDao {
 		return id;
 	}
 
-	private static Filter createFilterFromOrderFilterBean(OrderFilterBean orderFilterBean) throws ParseException {
+	private static List<Order> getOrdersForFilterBean(OrderFilterBean orderFilterBean) throws ParseException {
+
+		Query<Order> baseQuery = ObjectifyService.ofy().load().type(Order.class);
+
 		Filter compositeFilter = null;
 
+		boolean hasOrderNum = orderFilterBean.getOrderNumber() > 0;
+		boolean hasMobile = orderFilterBean.getMobile() > 0;
+		boolean hasName = orderFilterBean.getName() != null && orderFilterBean.getName().trim().length() > 0;
 		boolean hasDeliveryStartDate = orderFilterBean.getDeliveryStartDate() > 0;
 		boolean hasDeliveryEndDate = orderFilterBean.getDeliveryEndDate() > 0;
+		boolean hasItemCategory = orderFilterBean.getItemCategory() != null
+				&& orderFilterBean.getItemCategory().trim().length() > 0;
 
-		long deliveryStartDate = 0;
-		if (hasDeliveryStartDate) {
-			deliveryStartDate = orderFilterBean.getDeliveryStartDate();
-		} else if (!hasDeliveryEndDate) {
-			deliveryStartDate = System.currentTimeMillis();
+		String sortCondition;
+
+		if (hasOrderNum || hasMobile || hasName) {
+
+			sortCondition = "-deliveryDateMillis";
+
+			if (hasOrderNum) {
+				PropertyFilter orderNumberFilter = PropertyFilter.eq("orderNumber", orderFilterBean.getOrderNumber());
+				compositeFilter = null == compositeFilter ? orderNumberFilter
+						: CompositeFilter.and(compositeFilter, orderNumberFilter);
+			}
+
+			if (hasMobile) {
+				PropertyFilter mobileFilter = PropertyFilter.eq("mobile", orderFilterBean.getMobile());
+				compositeFilter = null == compositeFilter ? mobileFilter
+						: CompositeFilter.and(compositeFilter, mobileFilter);
+			}
+
+			if (hasName) {
+				PropertyFilter nameStartFilter = PropertyFilter.ge("name", orderFilterBean.getName());
+				PropertyFilter nameEndFilter = PropertyFilter.lt("name", orderFilterBean.getName() + "\uFFFD");
+				compositeFilter = null == compositeFilter ? CompositeFilter.and(nameStartFilter, nameEndFilter)
+						: CompositeFilter.and(compositeFilter, nameStartFilter, nameEndFilter);
+				sortCondition = "name";
+			}
+
+			return baseQuery.order(sortCondition).filter(compositeFilter).list();
+
+		} else {
+
+			sortCondition = "deliveryDateMillis";
+
+			long deliveryStartDate = 0;
+			if (hasDeliveryStartDate) {
+				deliveryStartDate = orderFilterBean.getDeliveryStartDate();
+			} else if (!hasDeliveryEndDate) {
+				deliveryStartDate = System.currentTimeMillis();
+			}
+			deliveryStartDate = getUpdatedDeliveryStartDate(deliveryStartDate);
+			compositeFilter = PropertyFilter.ge("deliveryDateMillis", deliveryStartDate);
+
+			if (hasDeliveryEndDate) {
+				long deliveryEndDate = orderFilterBean.getDeliveryEndDate();
+				deliveryEndDate = getUpdatedDeliveryEndTimestamp(deliveryEndDate);
+				PropertyFilter deliveryEndDateFilter = PropertyFilter.le("deliveryDateMillis", deliveryEndDate);
+				compositeFilter = null == compositeFilter ? deliveryEndDateFilter
+						: CompositeFilter.and(compositeFilter, deliveryEndDateFilter);
+			}
+
+			List<Order> result = baseQuery.order(sortCondition).filter(compositeFilter).list();
+
+			if (hasItemCategory) {
+				List<String> itemCategories = Arrays.asList(orderFilterBean.getItemCategory().trim().split(","));
+				result = result.stream().filter(order -> hasItemCategory(order, itemCategories))
+						.collect(Collectors.toList());
+			}
+
+			return result;
 		}
-		deliveryStartDate = getUpdatedDeliveryStartDate(deliveryStartDate);
-		compositeFilter = PropertyFilter.ge("deliveryDateMillis", deliveryStartDate);
+	}
 
-		if (hasDeliveryEndDate) {
-			long deliveryEndDate = orderFilterBean.getDeliveryEndDate();
-			deliveryEndDate = getUpdatedDeliveryEndTimestamp(deliveryEndDate);
-			PropertyFilter deliveryEndDateFilter = PropertyFilter.le("deliveryDateMillis", deliveryEndDate);
-			compositeFilter = null == compositeFilter ? deliveryEndDateFilter
-					: CompositeFilter.and(compositeFilter, deliveryEndDateFilter);
-		}
-
-		if (orderFilterBean.getOrderNumber() > 0) {
-			PropertyFilter orderNumberFilter = PropertyFilter.eq("orderNumber", orderFilterBean.getOrderNumber());
-			compositeFilter = null == compositeFilter ? orderNumberFilter
-					: CompositeFilter.and(compositeFilter, orderNumberFilter);
-		}
-
-		if (orderFilterBean.getMobile() > 0) {
-			PropertyFilter mobileFilter = PropertyFilter.eq("mobile", orderFilterBean.getMobile());
-			compositeFilter = null == compositeFilter ? mobileFilter
-					: CompositeFilter.and(compositeFilter, mobileFilter);
-		}
-
-		if (orderFilterBean.getName() != null && orderFilterBean.getName().trim().length() > 0) {
-			PropertyFilter nameStartFilter = PropertyFilter.ge("name", orderFilterBean.getName());
-			PropertyFilter nameEndFilter = PropertyFilter.lt("name", orderFilterBean.getName() + "\uFFFD");
-			compositeFilter = null == compositeFilter ? CompositeFilter.and(nameStartFilter, nameEndFilter)
-					: CompositeFilter.and(compositeFilter, nameStartFilter, nameEndFilter);
-		}
-
-		return compositeFilter;
+	private static boolean hasItemCategory(Order order, List<String> itemCategories) {
+		return Arrays.stream(order.getItemNames()).map(ITEM_NAME_TO_ITEM_CATEGORIES_MAP::get)
+				.flatMap(catNames -> catNames.stream()).anyMatch(itemCategories::contains);
 	}
 
 	private static long getUpdatedDeliveryStartDate(long deliveryStartDateMillis) {
