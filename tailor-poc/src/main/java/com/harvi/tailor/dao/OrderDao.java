@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -206,7 +207,9 @@ public class OrderDao {
 				sortCondition = "name";
 			}
 
-			return baseQuery.order(sortCondition).filter(compositeFilter).list();
+			Query<Order> finalQuery = baseQuery.order(sortCondition).filter(compositeFilter);
+			LOG.info("Final Query: " + finalQuery);
+			return finalQuery.list();
 
 		} else {
 
@@ -229,7 +232,9 @@ public class OrderDao {
 						: CompositeFilter.and(compositeFilter, deliveryEndDateFilter);
 			}
 
-			List<Order> result = baseQuery.order(sortCondition).filter(compositeFilter).list();
+			Query<Order> finalQuery = baseQuery.order(sortCondition).filter(compositeFilter);
+			LOG.info("Final Query: " + finalQuery);
+			List<Order> result = finalQuery.list();
 
 			if (hasItemCategory) {
 				List<String> itemCategories = Arrays.asList(orderFilterBean.getItemCategory().trim().split(","));
@@ -247,7 +252,7 @@ public class OrderDao {
 	}
 
 	private static long getUpdatedDeliveryStartDate(long deliveryStartDateMillis) {
-		Calendar c = Calendar.getInstance();
+		Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Asia/Calcutta"));
 		c.setTime(new Date(deliveryStartDateMillis));
 		c.set(Calendar.HOUR_OF_DAY, 0);
 		c.set(Calendar.MINUTE, 0);
@@ -257,7 +262,7 @@ public class OrderDao {
 	}
 
 	private static long getUpdatedDeliveryEndTimestamp(long deliveryEndDateMillis) {
-		Calendar c = Calendar.getInstance();
+		Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Asia/Calcutta"));
 		c.setTime(new Date(deliveryEndDateMillis));
 		c.set(Calendar.HOUR_OF_DAY, 23);
 		c.set(Calendar.MINUTE, 59);
@@ -284,4 +289,5 @@ public class OrderDao {
 				.header(HttpHeaders.LOCATION, duplicateOrderURIString).build();
 		throw new WebApplicationException(response);
 	}
+
 }
