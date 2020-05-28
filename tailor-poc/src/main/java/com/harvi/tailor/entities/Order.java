@@ -16,6 +16,8 @@ public class Order {
 
 	private String orderType;
 
+	private String orderStatus;
+
 	private long orderDateMillis;
 
 	@Index
@@ -53,6 +55,14 @@ public class Order {
 
 	public void setOrderType(String orderType) {
 		this.orderType = orderType;
+	}
+
+	public String getOrderStatus() {
+		return orderStatus;
+	}
+
+	public void setOrderStatus(String orderStatus) {
+		this.orderStatus = orderStatus;
 	}
 
 	public long getOrderDateMillis() {
@@ -121,10 +131,10 @@ public class Order {
 
 	@Override
 	public String toString() {
-		return "Order [id=" + id + ", orderType=" + orderType + ", orderDateMillis=" + orderDateMillis
-				+ ", deliveryDateMillis=" + deliveryDateMillis + ", orderNumber=" + orderNumber + ", name=" + name
-				+ ", mobile=" + mobile + ", itemNames=" + Arrays.toString(itemNames) + ", itemCounts="
-				+ Arrays.toString(itemCounts) + ", notes=" + notes + "]";
+		return "Order [id=" + id + ", orderType=" + orderType + ", orderStatus=" + orderStatus + ", orderDateMillis="
+				+ orderDateMillis + ", deliveryDateMillis=" + deliveryDateMillis + ", orderNumber=" + orderNumber
+				+ ", name=" + name + ", mobile=" + mobile + ", itemNames=" + Arrays.toString(itemNames)
+				+ ", itemCounts=" + Arrays.toString(itemCounts) + ", notes=" + notes + "]";
 	}
 
 }

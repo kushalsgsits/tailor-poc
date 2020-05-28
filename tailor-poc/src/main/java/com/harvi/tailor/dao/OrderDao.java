@@ -23,6 +23,7 @@ import com.google.cloud.datastore.StructuredQuery.Filter;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.cmd.Query;
+import com.harvi.tailor.constants.OrderStatus;
 import com.harvi.tailor.entities.ApiError;
 import com.harvi.tailor.entities.Order;
 import com.harvi.tailor.entities.filterbeans.OrderFilterBean;
@@ -100,6 +101,7 @@ public class OrderDao {
 	public Order save(Order order, UriInfo uriInfo) {
 		try {
 			order.setId(createId(order));
+			order.setOrderStatus(OrderStatus.CREATED);
 			LOG.fine("Saving Order: " + order);
 			String id = order.getId();
 			Order duplicateOrder = loadOrderById(id);
@@ -174,6 +176,8 @@ public class OrderDao {
 		Filter compositeFilter = null;
 
 		boolean hasOrderNum = orderFilterBean.getOrderNumber() > 0;
+		boolean hasOrderStatus = orderFilterBean.getOrderStatus() != null
+				&& orderFilterBean.getOrderStatus().trim().length() > 0;
 		boolean hasMobile = orderFilterBean.getMobile() > 0;
 		boolean hasName = orderFilterBean.getName() != null && orderFilterBean.getName().trim().length() > 0;
 		boolean hasDeliveryStartDate = orderFilterBean.getDeliveryStartDate() > 0;
@@ -182,6 +186,7 @@ public class OrderDao {
 				&& orderFilterBean.getItemCategory().trim().length() > 0;
 
 		String sortCondition;
+		List<Order> result;
 
 		if (hasOrderNum || hasMobile || hasName) {
 
@@ -209,7 +214,7 @@ public class OrderDao {
 
 			Query<Order> finalQuery = baseQuery.order(sortCondition).filter(compositeFilter);
 			LOG.info("Final Query: " + finalQuery);
-			return finalQuery.list();
+			result = finalQuery.list();
 
 		} else {
 
@@ -234,16 +239,22 @@ public class OrderDao {
 
 			Query<Order> finalQuery = baseQuery.order(sortCondition).filter(compositeFilter);
 			LOG.info("Final Query: " + finalQuery);
-			List<Order> result = finalQuery.list();
+			result = finalQuery.list();
 
 			if (hasItemCategory) {
 				List<String> itemCategories = Arrays.asList(orderFilterBean.getItemCategory().trim().split(","));
 				result = result.stream().filter(order -> hasItemCategory(order, itemCategories))
 						.collect(Collectors.toList());
 			}
-
-			return result;
 		}
+
+		if (hasOrderStatus) {
+			List<String> orderStatuses = Arrays.asList(orderFilterBean.getOrderStatus().trim().split(","));
+			result = result.stream().filter(order -> orderStatuses.contains(order.getOrderStatus()))
+					.collect(Collectors.toList());
+		}
+
+		return result;
 	}
 
 	private static boolean hasItemCategory(Order order, List<String> itemCategories) {
@@ -280,7 +291,8 @@ public class OrderDao {
 	}
 
 	private void throwExceptionForDuplicateOrder(UriInfo uriInfo, String id, Order duplicateOrder) {
-		String shortErrorMsg = "Could not save order as order placed is duplicate";
+		String shortErrorMsg = "Could not save order as order with type: '" + duplicateOrder.getOrderType()
+				+ "' and no.: '" + duplicateOrder.getOrderNumber() + "' already exits";
 		String longErrorMsg = "Duplicate " + duplicateOrder.toString();
 		LOG.severe(shortErrorMsg + ": " + longErrorMsg);
 		ApiError apiError = new ApiError(shortErrorMsg, longErrorMsg);

@@ -8,6 +8,7 @@ public class OrderFilterBean {
 	private @QueryParam("deliveryEndDateMillis") long deliveryEndDate;
 	private @QueryParam("itemCategory") String itemCategory;
 	private @QueryParam("orderNumber") long orderNumber;
+	private @QueryParam("orderStatus") String orderStatus;
 	private @QueryParam("name") String name;
 	private @QueryParam("mobile") long mobile;
 
@@ -41,6 +42,14 @@ public class OrderFilterBean {
 
 	public void setOrderNumber(long orderNumber) {
 		this.orderNumber = orderNumber;
+	}
+
+	public String getOrderStatus() {
+		return orderStatus;
+	}
+
+	public void setOrderStatus(String orderStatus) {
+		this.orderStatus = orderStatus;
 	}
 
 	public String getName() {
