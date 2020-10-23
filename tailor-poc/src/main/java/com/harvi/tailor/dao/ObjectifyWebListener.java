@@ -8,7 +8,9 @@ import com.google.appengine.api.utils.SystemProperty;
 import com.google.cloud.datastore.DatastoreOptions;
 import com.googlecode.objectify.ObjectifyFactory;
 import com.googlecode.objectify.ObjectifyService;
+import com.harvi.tailor.entities.Item;
 import com.harvi.tailor.entities.Order;
+import com.harvi.tailor.entities.Rate;
 
 @WebListener
 public class ObjectifyWebListener implements ServletContextListener {
@@ -26,6 +28,8 @@ public class ObjectifyWebListener implements ServletContextListener {
 		}
 		// This is a good place to register your POJO entity classes.
 		ObjectifyService.register(Order.class);
+		ObjectifyService.register(Item.class);
+		ObjectifyService.register(Rate.class);
 	}
 
 	@Override

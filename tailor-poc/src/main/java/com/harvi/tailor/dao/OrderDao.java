@@ -5,7 +5,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -23,44 +22,19 @@ import com.google.cloud.datastore.StructuredQuery.Filter;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.cmd.Query;
+import com.harvi.tailor.constants.ItemConstants.ItemType;
 import com.harvi.tailor.constants.OrderStatus;
 import com.harvi.tailor.entities.ApiError;
+import com.harvi.tailor.entities.Item;
 import com.harvi.tailor.entities.Order;
 import com.harvi.tailor.entities.filterbeans.OrderFilterBean;
+import com.harvi.tailor.utils.Utils;
 
 public class OrderDao {
 
 	private static final Logger LOG = Logger.getLogger(OrderDao.class.getName());
 
 	private static final OrderDao INSTANCE = new OrderDao();
-
-	private static Map<String, List<String>> ITEM_NAME_TO_ITEM_CATEGORIES_MAP = new HashMap<>();
-
-	static {
-		// All item categories:
-		// 'Coat', 'Shirt', 'Pant', 'Kurta', 'Payjama', 'Jacket', 'Safari Shirt',
-		// 'Others'
-		// All item names:
-		// '2 Piece Suit', '3 Piece Suit', 'Blazer', 'Achkan', 'Shirt', 'Pant', 'Jeans',
-		// 'Kurta', 'Payjama', 'Pant Payjama', 'Pathani', 'Kurti', 'Jacket', 'Safari',
-		// 'Waist Coat', 'Others'
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("2 Piece Suit", Arrays.asList("Coat", "Pant"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("3 Piece Suit", Arrays.asList("Coat", "Pant", "Jacket"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Blazer", Arrays.asList("Coat"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Achkan", Arrays.asList("Coat"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Shirt", Arrays.asList("Shirt"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Pant", Arrays.asList("Pant"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Jeans", Arrays.asList("Pant"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Kurti", Arrays.asList("Shirt"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Kurta", Arrays.asList("Kurta"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Payjama", Arrays.asList("Payjama"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Pant Payjama", Arrays.asList("Pant"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Pathani", Arrays.asList("Kurta"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Jacket", Arrays.asList("Jacket"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Waist Coat", Arrays.asList("Jacket"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Safari", Arrays.asList("Safari Shirt", "Pant"));
-		ITEM_NAME_TO_ITEM_CATEGORIES_MAP.put("Others", Arrays.asList("Others"));
-	}
 
 	private OrderDao() {
 
@@ -75,7 +49,7 @@ public class OrderDao {
 			return getOrdersForFilterBean(orderFilterBean);
 		} catch (Exception e) {
 			String shortErrorMsg = "Could not fetch orders";
-			ApiError apiError = createApiError(e, shortErrorMsg);
+			ApiError apiError = Utils.createApiError(e, shortErrorMsg, LOG);
 			Response response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(apiError).build();
 			throw new WebApplicationException(response);
 		}
@@ -93,7 +67,7 @@ public class OrderDao {
 		}
 
 		String shortErrorMsg = "Could not find order";
-		ApiError apiError = createApiError(exp, shortErrorMsg);
+		ApiError apiError = Utils.createApiError(exp, shortErrorMsg, LOG);
 		Response response = Response.status(Status.NOT_FOUND).entity(apiError).build();
 		throw new WebApplicationException(response);
 	}
@@ -114,7 +88,7 @@ public class OrderDao {
 			throw wae;
 		} catch (Exception e) {
 			String shortErrorMsg = "Could not save order";
-			ApiError apiError = createApiError(e, shortErrorMsg);
+			ApiError apiError = Utils.createApiError(e, shortErrorMsg, LOG);
 			Response response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(apiError).build();
 			throw new WebApplicationException(response);
 		}
@@ -125,7 +99,7 @@ public class OrderDao {
 			deletedOrder(id);
 		} catch (Exception e) {
 			String shortErrorMsg = "Could not delete order";
-			ApiError apiError = createApiError(e, shortErrorMsg);
+			ApiError apiError = Utils.createApiError(e, shortErrorMsg, LOG);
 			Response response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(apiError).build();
 			throw new WebApplicationException(response);
 		}
@@ -140,7 +114,7 @@ public class OrderDao {
 			return order;
 		} catch (Exception e) {
 			String shortErrorMsg = "Could not update order";
-			ApiError apiError = createApiError(e, shortErrorMsg);
+			ApiError apiError = Utils.createApiError(e, shortErrorMsg, LOG);
 			Response response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(apiError).build();
 			throw new WebApplicationException(response);
 		}
@@ -257,9 +231,12 @@ public class OrderDao {
 		return result;
 	}
 
-	private static boolean hasItemCategory(Order order, List<String> itemCategories) {
-		return Arrays.stream(order.getItemNames()).map(ITEM_NAME_TO_ITEM_CATEGORIES_MAP::get)
-				.flatMap(catNames -> catNames.stream()).anyMatch(itemCategories::contains);
+	private static boolean hasItemCategory(Order order, List<String> itemTypes) {
+		Map<String, Item> itemIdToItemMap = ItemDao.getInstance().getItemIdToItemMap();
+		return Arrays.stream(order.getItemIds()).map(itemId -> itemIdToItemMap.get(itemId))
+				.map(item -> item.getType() == ItemType.COMBO ? item.getComboItemIds() : Arrays.asList(item.getId()))
+				.flatMap(comboItemIds -> comboItemIds.stream()).map(comboItemId -> itemIdToItemMap.get(comboItemId))
+				.map(Item::getType).anyMatch(itemTypes::contains);
 	}
 
 	private static long getUpdatedDeliveryStartDate(long deliveryStartDateMillis) {
@@ -280,14 +257,6 @@ public class OrderDao {
 		c.set(Calendar.SECOND, 59);
 		c.set(Calendar.MILLISECOND, 999);
 		return c.getTime().getTime();
-	}
-
-	private ApiError createApiError(Exception e, String shortErrorMsg) {
-		String longErrorMsg = e == null ? ""
-				: "ExceptionMsg: " + e.getMessage() + "\nStackTrace: " + Arrays.toString(e.getStackTrace());
-		LOG.severe(shortErrorMsg + (e == null ? "" : (": " + longErrorMsg)));
-		ApiError apiError = new ApiError(shortErrorMsg, longErrorMsg);
-		return apiError;
 	}
 
 	private void throwExceptionForDuplicateOrder(UriInfo uriInfo, String id, Order duplicateOrder) {

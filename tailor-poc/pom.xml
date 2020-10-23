@@ -97,6 +97,12 @@
 		    <version>0.11.1</version>
 		    <scope>runtime</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.12</version>
+			<scope>provided</scope>
+		</dependency>
 		<!-- Uncomment this next dependency if you are using JDK 10 or earlier and you also want to use 
 		     RSASSA-PSS (PS256, PS384, PS512) algorithms.  JDK 11 or later does not require it for those algorithms:
 		<dependency>
