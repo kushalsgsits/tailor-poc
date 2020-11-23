@@ -41,38 +41,25 @@ public class ItemDao {
 		ITEMS.add(new Item("blazerOrCoat", "Blazer/Coat", ItemGroup.COAT, ItemType.COAT, null));
 		ITEMS.add(new Item("suit2p", "2 Piece Suit", ItemGroup.COAT, ItemType.COMBO,
 				Arrays.asList("blazerOrCoat", "pant")));
-		ITEMS.add(new Item("suit3pV", "3 Piece Suit (V)", ItemGroup.COAT, ItemType.COMBO,
-				Arrays.asList("blazerOrCoat", "pant", "waistCoatV")));
-		ITEMS.add(new Item("suit3pDB", "3 Piece Suit (DB)", ItemGroup.COAT, ItemType.COMBO,
-				Arrays.asList("blazerOrCoat", "pant", "waistCoatV")));
-		ITEMS.add(new Item("suit3pDBL", "3 Piece Suit (DB+L)", ItemGroup.COAT, ItemType.COMBO,
-				Arrays.asList("blazerOrCoat", "pant", "waistCoatV")));
+		ITEMS.add(new Item("suit3p", "3 Piece Suit", ItemGroup.COAT, ItemType.COMBO,
+				Arrays.asList("blazerOrCoat", "pant", "waistCoat")));
 		ITEMS.add(new Item("jodhpuriSuit", "Jodhpuri Suit", ItemGroup.COAT, ItemType.COMBO,
 				Arrays.asList("blazerOrCoat", "pant")));
-		ITEMS.add(new Item("tuxedo", "Tuxedo", ItemGroup.COAT, ItemType.COMBO, Arrays.asList("blazerOrCoat", "pant")));
 		ITEMS.add(new Item("achkan", "Achkan", ItemGroup.COAT, ItemType.COAT, null));
-		ITEMS.add(new Item("hunterCoat", "Hunter Coat", ItemGroup.COAT, ItemType.COAT, null));
 
 		ITEMS.add(new Item("shirt", "Shirt", ItemGroup.SHIRT_PANT, ItemType.SHIRT, null));
 		ITEMS.add(new Item("pant", "Pant", ItemGroup.SHIRT_PANT, ItemType.PANT, null));
-		ITEMS.add(new Item("chinos", "Chinos", ItemGroup.SHIRT_PANT, ItemType.PANT, null));
 		ITEMS.add(new Item("jeans", "Jeans", ItemGroup.SHIRT_PANT, ItemType.PANT, null));
 		ITEMS.add(new Item("kurti", "Kurti", ItemGroup.SHIRT_PANT, ItemType.SHIRT, null));
-		ITEMS.add(new Item("kurtiDPSF", "Kurti (DP+SF)", ItemGroup.SHIRT_PANT, ItemType.SHIRT, null));
 
 		ITEMS.add(new Item("kurta", "Kurta", ItemGroup.KURTA_PAYJAMA, ItemType.KURTA, null));
-		ITEMS.add(new Item("kurtaP", "Kurta (P)", ItemGroup.KURTA_PAYJAMA, ItemType.KURTA, null));
 		ITEMS.add(new Item("payjama", "Payjama", ItemGroup.KURTA_PAYJAMA, ItemType.PAYJAMA, null));
-		ITEMS.add(new Item("payjamaP", "Payjama (P)", ItemGroup.KURTA_PAYJAMA, ItemType.PAYJAMA, null));
 		ITEMS.add(new Item("pantPayjama", "Pant Payjama", ItemGroup.KURTA_PAYJAMA, ItemType.PANT, null));
 		ITEMS.add(new Item("pathaniSuit", "Pathani Suit", ItemGroup.KURTA_PAYJAMA, ItemType.COMBO,
 				Arrays.asList("kurta", "payjama")));
 
 		ITEMS.add(new Item("jacket", "Jacket", ItemGroup.JACKET, ItemType.JACKET, null));
-		ITEMS.add(new Item("waistCoatV", "Waist Coat (V)", ItemGroup.JACKET, ItemType.JACKET, null));
-		ITEMS.add(new Item("waistCoatDB", "Waist Coat (DB)", ItemGroup.JACKET, ItemType.JACKET, null));
-		ITEMS.add(new Item("waistCoatDBL", "Waist Coat (DB+L)", ItemGroup.JACKET, ItemType.JACKET, null));
-		ITEMS.add(new Item("hunterJacket", "Hunter Jacket", ItemGroup.JACKET, ItemType.JACKET, null));
+		ITEMS.add(new Item("waistCoat", "Waist Coat", ItemGroup.JACKET, ItemType.JACKET, null));
 
 		// safariShirt wont be visible in UI
 		ITEMS.add(new Item("safariShirt", "Safari Shirt", ItemGroup.MISCELLANIOUS, ItemType.SAFARI_SHIRT, null));

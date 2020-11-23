@@ -20,7 +20,7 @@ public class Rate {
 	private long dateMillis;
 
 	private String[] itemIds;
-	
+
 	private int[] itemRates;
 
 }
