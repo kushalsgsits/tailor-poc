@@ -28,3 +28,7 @@ indexes:
   properties:
   - name: "mobile"
   - name: "name"
+- kind: Rate
+  properties:
+  - name: __key__
+    direction: desc

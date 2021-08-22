@@ -36,7 +36,7 @@ public class LoginFilter implements Filter {
 			res.setStatus(HttpServletResponse.SC_OK);
 			return;
 		}
-		if (uri.equals("/webapi/login") || true) {
+		if (uri.equals("/webapi/login")) {
 			chain.doFilter(request, response);
 			return;
 		}

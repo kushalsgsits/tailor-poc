@@ -6,4 +6,4 @@ project.bucket=
 project.id=tailor-poc
 project.previousVersion.stop=true
 project.promote=true
-project.version=2020-05-28
+project.version=2021-01-09

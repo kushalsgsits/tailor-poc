@@ -55,8 +55,6 @@ public class RateDao {
 			rate.setDateMillis(System.currentTimeMillis());
 			saveRate(rate);
 			return rate;
-		} catch (WebApplicationException wae) {
-			throw wae;
 		} catch (Exception e) {
 			String shortErrorMsg = "Could not save rate";
 			ApiError apiError = Utils.createApiError(e, shortErrorMsg, LOG);

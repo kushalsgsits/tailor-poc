@@ -107,6 +107,8 @@ public class ItemDao {
 					});
 
 			return GROUPED_ITEMS;
+		} catch (WebApplicationException e) {
+			throw e;
 		} catch (Exception e) {
 			String shortErrorMsg = "Could not get grouped items";
 			ApiError apiError = Utils.createApiError(e, shortErrorMsg, LOG);
